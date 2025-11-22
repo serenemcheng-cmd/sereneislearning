@@ -122,14 +122,23 @@ document.addEventListener('DOMContentLoaded', function() {
         function getAllArticles() {
             const articles = [];
             
+            // Determine if we're in a posts subdirectory (for relative path fixing)
+            const isInPostsDir = window.location.pathname.includes('/posts/');
+            const basePath = isInPostsDir ? '../' : './';
+            
             // Get favorite cards
             const favoriteCards = document.querySelectorAll('.favorite-card');
             favoriteCards.forEach(card => {
                 const titleEl = card.querySelector('.favorite-title a');
                 const excerptEl = card.querySelector('.favorite-excerpt');
-                const link = titleEl?.href;
+                let link = titleEl?.href;
                 const title = titleEl?.textContent?.trim() || '';
                 const excerpt = excerptEl?.textContent?.trim() || '';
+                
+                // Fix relative paths if needed
+                if (link && !link.startsWith('http') && isInPostsDir && !link.startsWith('../')) {
+                    link = basePath + link.replace('./', '');
+                }
                 
                 if (link && title) {
                     articles.push({
@@ -146,31 +155,15 @@ document.addEventListener('DOMContentLoaded', function() {
             postItems.forEach(item => {
                 const titleEl = item.querySelector('.post-title a');
                 const dateEl = item.querySelector('.post-date');
-                const link = titleEl?.href;
+                let link = titleEl?.href;
                 const title = titleEl?.textContent?.trim() || '';
                 const date = dateEl?.textContent?.trim() || null;
                 const datetime = dateEl?.getAttribute('datetime') || null;
                 
-                if (link && title) {
-                    articles.push({
-                        title: title,
-                        excerpt: '',
-                        link: link,
-                        date: date,
-                        datetime: datetime
-                    });
+                // Fix relative paths if needed
+                if (link && !link.startsWith('http') && isInPostsDir && !link.startsWith('../')) {
+                    link = basePath + link.replace('./', '');
                 }
-            });
-            
-            // Also check interest areas page for posts-list-mini items
-            const miniPosts = document.querySelectorAll('.posts-list-mini li');
-            miniPosts.forEach(item => {
-                const linkEl = item.querySelector('a');
-                const dateEl = item.querySelector('time');
-                const link = linkEl?.href;
-                const title = linkEl?.textContent?.trim() || '';
-                const date = dateEl?.textContent?.trim() || null;
-                const datetime = dateEl?.getAttribute('datetime') || null;
                 
                 if (link && title) {
                     articles.push({
@@ -183,23 +176,178 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
+            // Get posts-list-mini items (used on interest-areas page)
+            const miniPosts = document.querySelectorAll('.posts-list-mini li');
+            miniPosts.forEach(item => {
+                const linkEl = item.querySelector('a');
+                const dateEl = item.querySelector('time');
+                let link = linkEl?.href;
+                const title = linkEl?.textContent?.trim() || '';
+                const date = dateEl?.textContent?.trim() || null;
+                const datetime = dateEl?.getAttribute('datetime') || null;
+                
+                // Fix relative paths if needed
+                if (link && !link.startsWith('http') && isInPostsDir && !link.startsWith('../')) {
+                    link = basePath + link.replace('./', '');
+                }
+                
+                if (link && title) {
+                    articles.push({
+                        title: title,
+                        excerpt: '',
+                        link: link,
+                        date: date,
+                        datetime: datetime
+                    });
+                }
+            });
+            
+            // If no articles found on current page, try to load from index page
+            // This helps on pages like about-2.html or individual post pages
+            if (articles.length === 0 && typeof window.searchIndex === 'undefined') {
+                loadSearchIndex();
+                return [];
+            }
+            
             return articles;
         }
         
+        // Load search index from homepage if available
+        async function loadSearchIndex() {
+            if (typeof window.searchIndex !== 'undefined') {
+                return window.searchIndex;
+            }
+            
+            try {
+                // Determine correct path to index
+                const isInPostsDir = window.location.pathname.includes('/posts/');
+                const indexPath = isInPostsDir ? '../index.html' : './index.html';
+                
+                const response = await fetch(indexPath);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const articles = [];
+                const basePath = isInPostsDir ? '../' : './';
+                
+                // Get favorite cards from index
+                const favoriteCards = doc.querySelectorAll('.favorite-card');
+                favoriteCards.forEach(card => {
+                    const titleEl = card.querySelector('.favorite-title a');
+                    const excerptEl = card.querySelector('.favorite-excerpt');
+                    let link = titleEl?.href;
+                    const title = titleEl?.textContent?.trim() || '';
+                    const excerpt = excerptEl?.textContent?.trim() || '';
+                    
+                    if (link && !link.startsWith('http') && isInPostsDir && !link.startsWith('../')) {
+                        link = basePath + link.replace('./', '');
+                    }
+                    
+                    if (link && title) {
+                        articles.push({
+                            title: title,
+                            excerpt: excerpt,
+                            link: link,
+                            date: null
+                        });
+                    }
+                });
+                
+                // Get post items from index
+                const postItems = doc.querySelectorAll('.post-item');
+                postItems.forEach(item => {
+                    const titleEl = item.querySelector('.post-title a');
+                    const dateEl = item.querySelector('.post-date');
+                    let link = titleEl?.href;
+                    const title = titleEl?.textContent?.trim() || '';
+                    const date = dateEl?.textContent?.trim() || null;
+                    
+                    if (link && !link.startsWith('http') && isInPostsDir && !link.startsWith('../')) {
+                        link = basePath + link.replace('./', '');
+                    }
+                    
+                    if (link && title) {
+                        articles.push({
+                            title: title,
+                            excerpt: '',
+                            link: link,
+                            date: date,
+                            datetime: null
+                        });
+                    }
+                });
+                
+                window.searchIndex = articles;
+                return articles;
+            } catch (error) {
+                console.error('Failed to load search index:', error);
+                window.searchIndex = [];
+                return [];
+            }
+        }
+        
         // Search function
-        function performSearch(query) {
+        async function performSearch(query) {
             if (!query || query.length < 2) {
                 searchResults.classList.remove('active');
                 return;
             }
             
-            const articles = getAllArticles();
+            let articles = getAllArticles();
+            
+            // If no articles on current page, try to load from index
+            if (articles.length === 0) {
+                articles = await loadSearchIndex();
+            }
+            
+            // Also try loading from interest-areas page if available
+            if (articles.length === 0 || articles.length < 10) {
+                try {
+                    const isInPostsDir = window.location.pathname.includes('/posts/');
+                    const interestAreasPath = isInPostsDir ? '../interest-areas.html' : './interest-areas.html';
+                    const response = await fetch(interestAreasPath);
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    const basePath = isInPostsDir ? '../' : './';
+                    
+                    // Get posts-list-mini items
+                    const miniPosts = doc.querySelectorAll('.posts-list-mini li');
+                    miniPosts.forEach(item => {
+                        const linkEl = item.querySelector('a');
+                        const dateEl = item.querySelector('time');
+                        let link = linkEl?.href;
+                        const title = linkEl?.textContent?.trim() || '';
+                        const date = dateEl?.textContent?.trim() || null;
+                        
+                        if (link && !link.startsWith('http') && isInPostsDir && !link.startsWith('../')) {
+                            link = basePath + link.replace('./', '');
+                        }
+                        
+                        // Avoid duplicates
+                        if (link && title && !articles.find(a => a.link === link)) {
+                            articles.push({
+                                title: title,
+                                excerpt: '',
+                                link: link,
+                                date: date,
+                                datetime: null
+                            });
+                        }
+                    });
+                } catch (error) {
+                    // Silent fail - just continue with what we have
+                }
+            }
+            
             const queryLower = query.toLowerCase();
             
             // Filter articles by title and excerpt
             const results = articles.filter(article => {
                 const titleMatch = article.title.toLowerCase().includes(queryLower);
-                const excerptMatch = article.excerpt.toLowerCase().includes(queryLower);
+                const excerptMatch = article.excerpt && article.excerpt.toLowerCase().includes(queryLower);
                 return titleMatch || excerptMatch;
             });
             
@@ -266,8 +414,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Debounce search
-            searchTimeout = setTimeout(() => {
-                performSearch(query);
+            searchTimeout = setTimeout(async () => {
+                await performSearch(query);
             }, 150);
         });
         
