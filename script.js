@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========================================
-// Search Form Enhancement
+// Search Form Enhancement with Live Results
 // ========================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -112,26 +112,220 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('#search-input');
     
     if (searchForm && searchInput) {
+        // Create search results container
+        const searchResults = document.createElement('div');
+        searchResults.className = 'search-results';
+        searchResults.id = 'search-results';
+        searchForm.appendChild(searchResults);
+        
+        // Get all articles/posts on the page
+        function getAllArticles() {
+            const articles = [];
+            
+            // Get favorite cards
+            const favoriteCards = document.querySelectorAll('.favorite-card');
+            favoriteCards.forEach(card => {
+                const titleEl = card.querySelector('.favorite-title a');
+                const excerptEl = card.querySelector('.favorite-excerpt');
+                const link = titleEl?.href;
+                const title = titleEl?.textContent?.trim() || '';
+                const excerpt = excerptEl?.textContent?.trim() || '';
+                
+                if (link && title) {
+                    articles.push({
+                        title: title,
+                        excerpt: excerpt,
+                        link: link,
+                        date: null
+                    });
+                }
+            });
+            
+            // Get post items
+            const postItems = document.querySelectorAll('.post-item');
+            postItems.forEach(item => {
+                const titleEl = item.querySelector('.post-title a');
+                const dateEl = item.querySelector('.post-date');
+                const link = titleEl?.href;
+                const title = titleEl?.textContent?.trim() || '';
+                const date = dateEl?.textContent?.trim() || null;
+                const datetime = dateEl?.getAttribute('datetime') || null;
+                
+                if (link && title) {
+                    articles.push({
+                        title: title,
+                        excerpt: '',
+                        link: link,
+                        date: date,
+                        datetime: datetime
+                    });
+                }
+            });
+            
+            // Also check interest areas page for posts-list-mini items
+            const miniPosts = document.querySelectorAll('.posts-list-mini li');
+            miniPosts.forEach(item => {
+                const linkEl = item.querySelector('a');
+                const dateEl = item.querySelector('time');
+                const link = linkEl?.href;
+                const title = linkEl?.textContent?.trim() || '';
+                const date = dateEl?.textContent?.trim() || null;
+                const datetime = dateEl?.getAttribute('datetime') || null;
+                
+                if (link && title) {
+                    articles.push({
+                        title: title,
+                        excerpt: '',
+                        link: link,
+                        date: date,
+                        datetime: datetime
+                    });
+                }
+            });
+            
+            return articles;
+        }
+        
+        // Search function
+        function performSearch(query) {
+            if (!query || query.length < 2) {
+                searchResults.classList.remove('active');
+                return;
+            }
+            
+            const articles = getAllArticles();
+            const queryLower = query.toLowerCase();
+            
+            // Filter articles by title and excerpt
+            const results = articles.filter(article => {
+                const titleMatch = article.title.toLowerCase().includes(queryLower);
+                const excerptMatch = article.excerpt.toLowerCase().includes(queryLower);
+                return titleMatch || excerptMatch;
+            });
+            
+            // Sort by relevance (title matches first, then excerpt matches)
+            results.sort((a, b) => {
+                const aTitleMatch = a.title.toLowerCase().includes(queryLower);
+                const bTitleMatch = b.title.toLowerCase().includes(queryLower);
+                if (aTitleMatch && !bTitleMatch) return -1;
+                if (!aTitleMatch && bTitleMatch) return 1;
+                return 0;
+            });
+            
+            // Limit to 10 results
+            const limitedResults = results.slice(0, 10);
+            
+            // Display results
+            displayResults(limitedResults, query);
+        }
+        
+        // Display search results
+        function displayResults(results, query) {
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-results-empty">No articles found</div>';
+                searchResults.classList.add('active');
+                return;
+            }
+            
+            searchResults.innerHTML = results.map(article => {
+                const excerpt = article.excerpt 
+                    ? `<p class="search-result-excerpt">${article.excerpt}</p>` 
+                    : '';
+                const date = article.date 
+                    ? `<div class="search-result-date">${article.date}</div>` 
+                    : '';
+                
+                return `
+                    <a href="${article.link}" class="search-result-item">
+                        <div class="search-result-title">${highlightMatch(article.title, query)}</div>
+                        ${excerpt}
+                        ${date}
+                    </a>
+                `;
+            }).join('');
+            
+            searchResults.classList.add('active');
+        }
+        
+        // Highlight matching text
+        function highlightMatch(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<mark>$1</mark>');
+        }
+        
+        // Handle input
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                searchResults.classList.remove('active');
+                return;
+            }
+            
+            // Debounce search
+            searchTimeout = setTimeout(() => {
+                performSearch(query);
+            }, 150);
+        });
+        
         // Handle form submission
         searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const query = searchInput.value.trim();
-            if (query) {
-                // In a real implementation, you'd redirect to search results
-                // For now, we'll just log it
-                console.log('Search query:', query);
-                // window.location.href = `/search?q=${encodeURIComponent(query)}`;
+            
+            if (query && searchResults.querySelector('.search-result-item')) {
+                // Go to first result
+                const firstResult = searchResults.querySelector('.search-result-item');
+                if (firstResult) {
+                    window.location.href = firstResult.href;
+                }
             }
         });
         
-        // Add focus state management
-        searchInput.addEventListener('focus', function() {
-            searchForm.classList.add('focused');
+        // Close search results when clicking outside (with slight delay to allow clicks)
+        document.addEventListener('click', function(e) {
+            if (!searchForm.contains(e.target)) {
+                setTimeout(() => {
+                    if (!searchForm.contains(document.activeElement)) {
+                        searchResults.classList.remove('active');
+                    }
+                }, 100);
+            }
         });
         
-        searchInput.addEventListener('blur', function() {
-            searchForm.classList.remove('focused');
+        // Keep results open when clicking on them
+        searchResults.addEventListener('click', function(e) {
+            if (e.target.closest('.search-result-item')) {
+                // Allow navigation to happen
+                searchResults.classList.remove('active');
+            }
+        });
+        
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', function(e) {
+            const items = searchResults.querySelectorAll('.search-result-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
+                const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                if (items[nextIndex]) {
+                    items[nextIndex].focus();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                if (items[prevIndex]) {
+                    items[prevIndex].focus();
+                }
+            } else if (e.key === 'Escape') {
+                searchResults.classList.remove('active');
+                searchInput.blur();
+            }
         });
     }
 });
