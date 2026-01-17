@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="José Dinneny: Getting to the Root of Hydropatterning - Serene Is Learning" name="description"/>
+<title>José Dinneny: Getting to the Root of Hydropatterning - Serene Is Learning</title>
+<link href="../styles.css" rel="stylesheet"/>
+<style>
+    .post-content-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: var(--spacing-xl) var(--spacing-md);
+    }
+    .post-header {
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 2px solid var(--color-border);
+    }
+    .post-title {
+        font-size: clamp(2rem, 5vw, 3rem);
+        margin-bottom: var(--spacing-sm);
+        line-height: 1.2;
+    }
+    .post-meta {
+        color: var(--color-text-light);
+        font-size: 0.9375rem;
+    }
+    .post-body {
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: var(--color-text);
+    }
+    .post-body p {
+        margin-bottom: var(--spacing-md);
+    }
+    .post-body img {
+        max-width: 100%;
+        height: auto;
+        margin: var(--spacing-md) 0;
+        border-radius: 8px;
+    }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header">
+<div class="header-container">
+<nav aria-label="Main navigation" class="main-navigation">
+<button aria-expanded="false" aria-label="Toggle menu" class="mobile-menu-toggle">
+<span></span><span></span><span></span>
+</button>
+<ul class="nav-menu">
+<li><a href="../interest-areas.html">Interest Areas</a></li>
+<li><a href="../about-2.html">About</a></li>
+</ul>
+</nav>
+<h1 class="site-title">
+<a href=".
