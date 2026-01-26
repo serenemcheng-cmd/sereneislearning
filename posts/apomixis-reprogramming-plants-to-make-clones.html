@@ -78,6 +78,7 @@
             height: auto;
             margin: var(--spacing-md) 0;
             border-radius: 8px;
+            display: block;
         }
         
         .post-body figure {
@@ -104,11 +105,38 @@
             color: var(--color-secondary);
         }
 
+        /* Dark brown border for section dividers */
         .section-border {
             border: 0;
             height: 1px;
-            background: linear-gradient(to right, rgba(0,0,0,0), var(--color-border), rgba(0,0,0,0));
+            background: linear-gradient(to right, rgba(0,0,0,0), #4b2e1a, rgba(0,0,0,0));
             margin: var(--spacing-lg) 0;
+        }
+
+        /* Float images to the left with text wrapping */
+        .float-left {
+            float: left;
+            width: 40%;
+            max-width: 40%;
+            margin: 0 1rem 1rem 0;
+        }
+
+        /* Ensure images inside float fill container */
+        .float-left img {
+            width: 100%;
+            height: auto;
+            margin: 0;
+            border-radius: 8px;
+        }
+
+        /* Responsive: stack on small screens */
+        @media (max-width: 640px) {
+            .float-left {
+                float: none;
+                width: 100%;
+                max-width: 100%;
+                margin: var(--spacing-md) 0;
+            }
         }
     </style>
 </head>
@@ -155,11 +183,11 @@
 <div class="post-body">
 <p>Most plants reproduce via sexual production. Like humans, they combine genetic information from two parents to form a zygote, and then a growing embryo. This embryo, also known as a seed, can develop into a mature plant, with half its genes from each parent.</p>
 <p>This strategy of taking two unique sets of DNA from each parent is great for genetic diversity, but can be limiting in agriculture. Thanks to sexual reproduction, classic apple lines cannot be produced from seed, as genetic recombination would result in offspring with different genes from their parents. Take a look at this very simplified example:</p>
-<figure>
+<figure class="float-left">
 <img src="https://sereneislearning.wordpress.com/wp-content/uploads/2025/11/image-3.png" alt="Simplified example: gene dots" />
 </figure>
 <p>Say this series of dots represents a gene from a honeycrisp apple. Each line represents information it got from one of its parents. If two identical honeycrisp apple trees were bred, it is possible that the alleles from the same parent would be passed onto the offspring.</p>
-<figure>
+<figure class="float-left">
 <img src="https://sereneislearning.wordpress.com/wp-content/uploads/2025/11/image-2.png" alt="Offspring different genetic information" />
 </figure>
 <p>Now the offspring has different genetic information from its parents. With over 47,000 genes in a honeycrisp apple, it is almost impossible to breed two of the same line and get an identical offspring. This means there is no “honeycrisp seed,” and cuttings must be grafted from parent trees to make clones of the parents.</p>
